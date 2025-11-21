@@ -1,0 +1,10 @@
+# Python/ jupyter working files
+__pycache__/
+*.py[cod]
+
+# Outputs (this is too large to push, but I want to retain the folder structure)
+outputs/*
+!outputs/.gitkeep
+
+# Local version of locations.py
+src/locations_local.py
