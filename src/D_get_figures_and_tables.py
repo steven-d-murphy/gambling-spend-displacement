@@ -13,11 +13,8 @@ font_colour = 'black'
 green_hex = '#80C080'
 grey_hex = '#C0C0C0'
 
-def style_nature(column='single'):
+def style_science(column='single'):
     
-    # Set figure width. 90mm for single column. 180 for double
-    # matplotlib sets figure size in inches
-
     if column == 'double':
         fig_width_mm = 180  
     else:
@@ -32,7 +29,7 @@ def style_nature(column='single'):
     # Set linewidths
     linewidth = 0.5
     
-    # Set fonts. Nature requires Arial or Helvetica
+    # Set fonts.
     # font = '' # Arial or Helvetica
     fontsize_small = 5 #pt
     fontsize_large = 7 #pt
@@ -419,8 +416,8 @@ def plot_area_bar_plot(absmdf,
     xtick_positions = left_edges + widths * 0.5
 
     # outlines
-    _, _, linewidth_nature = style_nature()
-    bar_outline_weight = linewidth_nature
+    _, _, linewidth_science = style_science()
+    bar_outline_weight = linewidth_science
     bar_outline_colour = overleaf_background
 
     # init palette if not provided
@@ -479,12 +476,12 @@ def get_figure_2(pdf, pdf_us, pdf_coffee):
     decile_col = 'decile_abs' 
 
     # --- overall figure sizing & style ---
-    fig_width, dpi_nature, linewidth_nature = style_nature(column='double')
+    fig_width, dpi_science, linewidth_science = style_science(column='double')
     fig_height = (fig_width/2.2) # Ratio of 2.2
     
     print(fig_width, fig_height)
     set_colour_style(font_colour, overleaf_background)
-    fig, axes = plt.subplots(figsize=(fig_width, fig_height), dpi=dpi_nature, constrained_layout=True)
+    fig, axes = plt.subplots(figsize=(fig_width, fig_height), dpi=dpi_science, constrained_layout=True)
     axes.axis('off')
     
     # Now split so that we have plots at the top and legend at the bottom
@@ -595,15 +592,15 @@ def get_figure_2(pdf, pdf_us, pdf_coffee):
         a.set_ylim(0, 1.0)
 
     # Now do panel labels.
-    ax_uk.text(-0.24, 1.0, 'a',
+    ax_uk.text(-0.24, 1.0, 'A',
                     transform=ax_uk.transAxes,
                     ha='left', va='top', fontweight='bold')
 
-    ax_us.text(-0.1, 1.0, 'b',
+    ax_us.text(-0.1, 1.0, 'B',
                     transform=ax_us.transAxes,
                     ha='left', va='top', fontweight='bold')
 
-    ax_coffee.text(-0.1, 1.0, 'c',
+    ax_coffee.text(-0.1, 1.0, 'C',
                     transform=ax_coffee.transAxes,
                     ha='left', va='top', fontweight='bold')
 
@@ -631,6 +628,11 @@ def get_figure_2(pdf, pdf_us, pdf_coffee):
     # --- save to pdf ---
     saveto = f'{output_folder}/figure_2.pdf'
     fig.savefig(saveto, format='pdf', transparent=True, bbox_inches='tight', pad_inches=0.00)
+    print("Saved:", saveto)
+    
+    # --- save to png ---
+    saveto = f'{output_folder}/figure_2.png'
+    fig.savefig(saveto, format='png', transparent=True, bbox_inches='tight', pad_inches=0.05)
     print("Saved:", saveto)    
     
     
@@ -645,7 +647,7 @@ def double_barplot_of_regression_coefficients(
     ylim):
 
     # --- Figure style and sizing ---
-    fig_width, dpi_nature, linewidth_nature = style_nature(column='double')
+    fig_width, dpi_science, linewidth_science = style_science(column='double')
     fig_width = fig_width*0.975
     
     # Keep panel height proportional to a *single* column width
@@ -686,16 +688,16 @@ def double_barplot_of_regression_coefficients(
     
     # --- Build figure with two axes ---
     fig, axes = plt.subplots(
-        1, 2, figsize=(fig_width, fig_height), dpi=dpi_nature, sharey=False
+        1, 2, figsize=(fig_width, fig_height), dpi=dpi_science, sharey=False
     )
     fig.patch.set_alpha(0.0)  # transparent figure bg
 
     # Common error-bar style
     errorbars_format = {
         'ecolor': font_colour,
-        'elinewidth': linewidth_nature,
+        'elinewidth': linewidth_science,
         'capsize': 0,
-        'capthick': linewidth_nature
+        'capthick': linewidth_science
     }
 
     def panel(ax, df, market, panel_letter, N_val):
@@ -716,7 +718,7 @@ def double_barplot_of_regression_coefficients(
         
 
         # # Zero line per-axes
-        # ax.axhline(0.0, color='k', linestyle='--', linewidth=linewidth_nature)
+        # ax.axhline(0.0, color='k', linestyle='--', linewidth=linewidth_science)
 
         # Margins
         ax.set_xmargin(0.025)
@@ -756,10 +758,10 @@ def double_barplot_of_regression_coefficients(
         
         if market == 'US': 
             ax.set_yticklabels(['-$0.50','-$0.40', '-$0.30', '-$0.20', '-$0.10', '$0.00'])
-            panel_letter='b'
+            panel_letter='B'
         elif market=='GB':
             ax.set_yticklabels(['-£0.50', '-£0.40', '-£0.30', '-£0.20', '-£0.10', '£0.00'])
-            panel_letter='a'
+            panel_letter='A'
             
         
         ax.text(
@@ -771,8 +773,8 @@ def double_barplot_of_regression_coefficients(
         )
 
     # Left = GB (panel a); Right = US (panel b)
-    panel(axes[0], gb_df, 'GB', 'a', N_gb)
-    panel(axes[1], us_df, 'US', 'b', N_us)
+    panel(axes[0], gb_df, 'GB', 'A', N_gb)
+    panel(axes[1], us_df, 'US', 'B', N_us)
     axes[0].tick_params(axis='y', labelleft=True, labelright=False, length=0)
     axes[1].tick_params(axis='y', labelleft=True, labelright=False, length=0)
     # axes[1].tick_params(axis='y', labelleft=False, labelright=True, length=0)
@@ -786,7 +788,13 @@ def double_barplot_of_regression_coefficients(
     tmp =plt.rcParams['figure.autolayout'] 
     plt.rcParams['figure.autolayout'] = False
     plt.rcParams['figure.autolayout'] = tmp
-    fig.savefig(save_path, format='pdf', transparent=True, bbox_inches='tight', pad_inches=0.02)
+    
+    fmt = save_path[-3:].lower()
+    if fmt=='pdf':
+        fig.savefig(save_path, format='pdf', transparent=True, bbox_inches='tight', pad_inches=0.02)
+    else:
+        fig.savefig(save_path, format='png', transparent=True, bbox_inches='tight', pad_inches=0.02)
+    
 
 
 def get_figure_3():
@@ -810,7 +818,7 @@ def get_figure_3():
     ylim=[-0.47, 0.0]
     effect_variable = 'COICOP_14.0'
     model = 'Fixed effects'
-    save_path =  f'{output_folder}/figure_3.pdf'
+    save_path =  f'{output_folder}/figure_3.png'
 
     double_barplot_of_regression_coefficients(
         gb_ldf, us_ldf, 
@@ -841,11 +849,11 @@ def plot_classification_proportion(db_pth, out_pth, class_prop=20000):
     stats.columns = ['transaction_count','sum_of_debits','count_of_brands', 'percentage_of_transactions', 'percentage_of_debits', 'percentage_of_brands']
     
     # Plot cumulative spend line
-    fig_width, dpi_nature, linewidth_nature = style_nature()
+    fig_width, dpi_science, linewidth_science = style_science()
 
-    fig, ax = plt.subplots(figsize=(fig_width, fig_width), dpi=dpi_nature)
+    fig, ax = plt.subplots(figsize=(fig_width, fig_width), dpi=dpi_science)
     plt_df = brand_debit_counts[:(2*class_prop)]
-    ax.plot(plt_df['rank'], plt_df['cum_sum_debits'], color='white', linewidth=linewidth_nature)
+    ax.plot(plt_df['rank'], plt_df['cum_sum_debits'], color='white', linewidth=linewidth_science)
     total_spend = brand_debit_counts['tot'].sum()
 
     # Unclassified
@@ -1259,9 +1267,9 @@ def get_overall_figures():
 
 
 def main():
-    from locations import pdf_pth_uk_coffee, pdf_pth_uk, output_folder,pdf_pth_us, db_pth_uk
+    from locations import pdf_pth_uk_coffee, pdf_pth_uk, output_folder, pdf_pth_us, db_pth_uk
     pdf = pd.read_parquet(pdf_pth_uk)
-    pdf_us = pd.read_parquet(pdf_pth_uk)
+    pdf_us = pd.read_parquet(pdf_pth_us)
     pdf_coffee = pd.read_parquet(pdf_pth_uk_coffee)
 
     get_overall_figures()
