@@ -108,18 +108,24 @@ def get_tables_of_results(F_results, F_quint_results, COICOP_labels_df, xlsx_out
 
     return ldf
 
-def get_labels_and_colour_dics(lkp_df):
+def get_labels_and_colour_dics(lkp_df, colour_scheme='ryb'):
     '''
     Takes the lookup dataframe and returns dictionaries of labels for the plots      
     '''
     # dictionary of long COICOP labels
     dic_COICOP_long = pd.Series(lkp_df.long_labels.to_list(),  index=lkp_df.COICOP.to_list()).to_dict()
-    
     # dictionary of short COICOP labels
     dic_COICOP_short = pd.Series(lkp_df.short_labels.to_list(),  index=lkp_df.COICOP.to_list()).to_dict()
-    
     # dictionary of colours for COICOP labels
-    dic_COICOP_colours =  pd.Series(lkp_df.colour.to_list(),  index=lkp_df.COICOP.to_list()).to_dict()
+    if (colour_scheme == 'ryb'):
+        dic_COICOP_colours =  pd.Series(lkp_df.nature_rybp.to_list(),  index=lkp_df.COICOP.to_list()).to_dict()
+    elif (colour_scheme == 'original'):
+        dic_COICOP_colours =  pd.Series(lkp_df.colour.to_list(),  index=lkp_df.COICOP.to_list()).to_dict()
+    elif (colour_scheme == 'new'):
+        dic_COICOP_colours = {}
+    else: # Set to ryb by default
+        dic_COICOP_colours =  pd.Series(lkp_df.nature_rybp.to_list(),  index=lkp_df.COICOP.to_list()).to_dict()
+
     dic_COICOP_colours['Combined_COICOP'] = '#D3D3D3'
              
     return dic_COICOP_long, dic_COICOP_short, dic_COICOP_colours
