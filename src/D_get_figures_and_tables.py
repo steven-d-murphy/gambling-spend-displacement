@@ -465,7 +465,7 @@ def plot_area_bar_plot(absmdf,
 
     return dic_colours, pivot_df, width_stats, dic_COICOP_short, small_categories
 
-def get_figure_2(pdf, pdf_us, pdf_coffee):
+def get_figure_2(pdf, pdf_us):
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
     import matplotlib.patches as mpatches
@@ -480,28 +480,28 @@ def get_figure_2(pdf, pdf_us, pdf_coffee):
 
     # --- overall figure sizing & style ---
     fig_width, our_dpi, our_linewidth = define_style(column='double')
-    fig_height = (fig_width/2.2) # Ratio of 2.2
+    height_ratios = [1, 0.25]  
+    fig_height = fig_width * (sum(height_ratios) / 3)   # general scaling
     
     print(fig_width, fig_height)
     set_colour_style(font_colour, overleaf_background)
     fig, axes = plt.subplots(figsize=(fig_width, fig_height), dpi=our_dpi, constrained_layout=True)
     axes.axis('off')
     
-    # Now split so that we have plots at the top and legend at the bottom
+    
     gs = gridspec.GridSpec(
         nrows=2, ncols=1, figure=fig,
         wspace=0.05,
-        height_ratios=[(fig_width/3), ((fig_width/2.2)-(fig_width/3))]
+        height_ratios=height_ratios
     )
     
     # Split top into three
     gs_top = gridspec.GridSpecFromSubplotSpec(
-        1, 3, subplot_spec=gs[0], hspace=0.05, width_ratios=[1, 1, 1]
+        1, 4, subplot_spec=gs[0], hspace=0.05, width_ratios=[0.5, 1, 1, 0.5]
     )
         
-    ax_uk = fig.add_subplot(gs_top[0]) 
-    ax_us = fig.add_subplot(gs_top[1]) 
-    ax_coffee = fig.add_subplot(gs_top[2]) 
+    ax_uk = fig.add_subplot(gs_top[1]) 
+    ax_us = fig.add_subplot(gs_top[2]) 
     ax_legend = fig.add_subplot(gs[1])     
     ax_legend.axis('off')
 
@@ -557,55 +557,19 @@ def get_figure_2(pdf, pdf_us, pdf_coffee):
     )
     ax_us.set_yticklabels([])
 
-    # --- Bottom left: (c) Coffee deciles ---
-    remove_col = 'COICOP_16.0'
-    xlabel = 'Coffee shop spend decile'
-    COICOP_cols_c = [c for c in pdf_coffee.columns if ('COICOP' in c)]
-    cols_c = ['user_id', 'month'] + COICOP_cols_c + [decile_col]
-    coffee_long = pdf_coffee[cols_c].melt(
-        id_vars=[decile_col, 'user_id', 'month'],
-        var_name='COICOP',
-        value_name='Total spend'
-    ).rename(columns={decile_col: 'decile'})
-
-
-    # Put coffee on top
-    combined_columns_coffee = [
-    'COICOP_16.0','COICOP_14.0','Combined_COICOP','COICOP_15.0', 'COICOP_10.0','COICOP_6.0','COICOP_3.0',
-    'COICOP_12.1','COICOP_5.0','COICOP_9.0','COICOP_13.2','COICOP_12.25',
-    'COICOP_8.0','COICOP_12.23','COICOP_11.0','COICOP_4.0','COICOP_7.0',
-    'COICOP_13.1','COICOP_12.22','COICOP_1.0'
-    ]
-
-    (dic_colours, pivot_df_coffee, width_stats_c, dic_COICOP_short, small_categories_c) = plot_area_bar_plot(
-        coffee_long, COICOP_labels_df,
-        COICOP_cols_c,
-        remove_col,
-        xlabel=xlabel,
-        ylabel=False,
-        dic_colours=dic_COICOP_colours,
-        dic_COICOP_short=dic_COICOP_short,
-        ax=ax_coffee, reorder_col=combined_columns_coffee
-    )
-    ax_coffee.set_yticklabels([])
-    ax_coffee.set_xlabel('Coffee spend decile')
     
     # Confirm y-limits
-    for a in (ax_uk, ax_us, ax_coffee):
+    for a in (ax_uk, ax_us):
         a.set_ylim(0, 1.0)
 
     # Now do panel labels.
-    ax_uk.text(-0.24, 1.0, 'a',
+    ax_uk.text(-0.24, 1.0, 'A',
                     transform=ax_uk.transAxes,
-                    ha='left', va='top', fontweight='bold')
+                    ha='left', va='top', fontweight='bold',fontstyle='italic')
 
-    ax_us.text(-0.1, 1.0, 'b',
+    ax_us.text(-0.1, 1.0, 'B',
                     transform=ax_us.transAxes,
-                    ha='left', va='top', fontweight='bold')
-
-    ax_coffee.text(-0.1, 1.0, 'c',
-                    transform=ax_coffee.transAxes,
-                    ha='left', va='top', fontweight='bold')
+                    ha='left', va='top', fontweight='bold',fontstyle='italic')
 
     # # --- Bottom section: Common legend in specified order ---
 
@@ -629,9 +593,9 @@ def get_figure_2(pdf, pdf_us, pdf_coffee):
     )
 
     # --- save to pdf ---
-    saveto = f'{output_folder}/figure_2.pdf'
+    saveto = f'{output_folder}/figure_2-UK_US.pdf'
     fig.savefig(saveto, format='pdf', transparent=True, bbox_inches='tight', pad_inches=0.00)
-    print("Saved:", saveto)    
+    print("Saved:", saveto)
     
     
     
@@ -756,17 +720,17 @@ def double_barplot_of_regression_coefficients(
         
         if market == 'US': 
             ax.set_yticklabels(['-$0.50','-$0.40', '-$0.30', '-$0.20', '-$0.10', '$0.00'])
-            panel_letter='b'
+            panel_letter='B'
         elif market=='GB':
             ax.set_yticklabels(['-£0.50', '-£0.40', '-£0.30', '-£0.20', '-£0.10', '£0.00'])
-            panel_letter='a'
-            
+            panel_letter='A'
         
         ax.text(
             -0.1, 1.4, panel_letter,  # position in axes coords
             transform=ax.transAxes,
-            fontsize=7,
+            fontsize=7,            
             fontweight='bold',
+            fontstyle='italic',
             va='top', ha='left'
         )
 
@@ -1476,7 +1440,7 @@ def main():
     us_table_1, uk_table_1 = get_overall_demographics_to_latex()
 
     # Generate Figure 2
-    get_figure_2(pdf, pdf_us, pdf_coffee)
+    get_figure_2(pdf, pdf_us)
 
     # Generate Figure 3
     get_figure_3()
