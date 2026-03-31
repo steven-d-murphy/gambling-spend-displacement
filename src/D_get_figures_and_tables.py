@@ -13,7 +13,7 @@ font_colour = 'black'
 green_hex = '#80C080'
 grey_hex = '#C0C0C0'
 
-def style_nature(column='single'):
+def define_style(column='single'):
     
     # Set figure width. 90mm for single column. 180 for double
     # matplotlib sets figure size in inches
@@ -32,7 +32,7 @@ def style_nature(column='single'):
     # Set linewidths
     linewidth = 0.5
     
-    # Set fonts. Nature requires Arial or Helvetica
+    # Set fonts. Choose Arial or Helvetica
     # font = '' # Arial or Helvetica
     fontsize_small = 5 #pt
     fontsize_large = 7 #pt
@@ -419,8 +419,8 @@ def plot_area_bar_plot(absmdf,
     xtick_positions = left_edges + widths * 0.5
 
     # outlines
-    _, _, linewidth_nature = style_nature()
-    bar_outline_weight = linewidth_nature
+    _, _, our_linewidth = define_style()
+    bar_outline_weight = our_linewidth
     bar_outline_colour = overleaf_background
 
     # init palette if not provided
@@ -479,12 +479,12 @@ def get_figure_2(pdf, pdf_us, pdf_coffee):
     decile_col = 'decile_abs' 
 
     # --- overall figure sizing & style ---
-    fig_width, dpi_nature, linewidth_nature = style_nature(column='double')
+    fig_width, our_dpi, our_linewidth = define_style(column='double')
     fig_height = (fig_width/2.2) # Ratio of 2.2
     
     print(fig_width, fig_height)
     set_colour_style(font_colour, overleaf_background)
-    fig, axes = plt.subplots(figsize=(fig_width, fig_height), dpi=dpi_nature, constrained_layout=True)
+    fig, axes = plt.subplots(figsize=(fig_width, fig_height), dpi=our_dpi, constrained_layout=True)
     axes.axis('off')
     
     # Now split so that we have plots at the top and legend at the bottom
@@ -645,7 +645,7 @@ def double_barplot_of_regression_coefficients(
     ylim):
 
     # --- Figure style and sizing ---
-    fig_width, dpi_nature, linewidth_nature = style_nature(column='double')
+    fig_width, our_dpi, our_linewidth = define_style(column='double')
     fig_width = fig_width*0.975
     
     # Keep panel height proportional to a *single* column width
@@ -686,16 +686,16 @@ def double_barplot_of_regression_coefficients(
     
     # --- Build figure with two axes ---
     fig, axes = plt.subplots(
-        1, 2, figsize=(fig_width, fig_height), dpi=dpi_nature, sharey=False
+        1, 2, figsize=(fig_width, fig_height), dpi=our_dpi, sharey=False
     )
     fig.patch.set_alpha(0.0)  # transparent figure bg
 
     # Common error-bar style
     errorbars_format = {
         'ecolor': font_colour,
-        'elinewidth': linewidth_nature,
+        'elinewidth': our_linewidth,
         'capsize': 0,
-        'capthick': linewidth_nature
+        'capthick': our_linewidth
     }
 
     def panel(ax, df, market, panel_letter, N_val):
@@ -716,7 +716,7 @@ def double_barplot_of_regression_coefficients(
         
 
         # # Zero line per-axes
-        # ax.axhline(0.0, color='k', linestyle='--', linewidth=linewidth_nature)
+        # ax.axhline(0.0, color='k', linestyle='--', linewidth=our_linewidth)
 
         # Margins
         ax.set_xmargin(0.025)
@@ -841,11 +841,11 @@ def plot_classification_proportion(db_pth, out_pth, class_prop=20000):
     stats.columns = ['transaction_count','sum_of_debits','count_of_brands', 'percentage_of_transactions', 'percentage_of_debits', 'percentage_of_brands']
     
     # Plot cumulative spend line
-    fig_width, dpi_nature, linewidth_nature = style_nature()
+    fig_width, our_dpi, our_linewidth = define_style()
 
-    fig, ax = plt.subplots(figsize=(fig_width, fig_width), dpi=dpi_nature)
+    fig, ax = plt.subplots(figsize=(fig_width, fig_width), dpi=our_dpi)
     plt_df = brand_debit_counts[:(2*class_prop)]
-    ax.plot(plt_df['rank'], plt_df['cum_sum_debits'], color='white', linewidth=linewidth_nature)
+    ax.plot(plt_df['rank'], plt_df['cum_sum_debits'], color='white', linewidth=our_linewidth)
     total_spend = brand_debit_counts['tot'].sum()
 
     # Unclassified
@@ -1172,7 +1172,210 @@ def plot_spend_distribution_facet(spend_ranges: pd.DataFrame,
     else:
         plt.close()
         
+def get_displacement_facet(pdf_in, saveto, facets):
+    '''Build a facet plot of displacement stacked bar plots'''
+    import matplotlib.pyplot as plt
+    import matplotlib.gridspec as gridspec
+    import matplotlib.patches as mpatches
+    
+    from locations import output_folder
+    from A_get_data import get_COICOP_maps, add_percentile_decile_and_quintile
+    from B_regression_analysis import get_labels_and_colour_dics
+    
+    COICOP_labels_df, COICOP_dic = get_COICOP_maps()
+    dic, dic_COICOP_short, dic_COICOP_colours = get_labels_and_colour_dics(COICOP_labels_df)
+    decile_col = 'decile_abs' 
+    
+    # These are our columns. Need a quick function to put the selected column on top
+    combined_columns = [
+        'COICOP_14.0','COICOP_16.0','Combined_COICOP','COICOP_15.0', 'COICOP_10.0','COICOP_6.0','COICOP_3.0',
+        'COICOP_12.1','COICOP_5.0','COICOP_9.0','COICOP_13.2','COICOP_12.25',
+        'COICOP_8.0','COICOP_12.23','COICOP_11.0','COICOP_4.0','COICOP_7.0',
+        'COICOP_13.1','COICOP_12.22','COICOP_1.0'
+        ]
+    def put_cat_on_top(lst,cat):
+        '''Moves the selected column up to be first in the list'''
+        return [cat]+[v for v in lst if not (v==cat)]
+    
+    # Make sure we pad facets correctly to avoid bugs
+    while len(facets) % 3 != 0:
+        facets.append(None)       
+    
+    # Have three columns and four rows. Assume facets is of length 11 or 12
+    fig_width, our_dpi, our_linewidth = define_style(column='double')
+        
+    # Four rows of panels + one legend row
+    height_ratios = [1, 1, 1, 1, 0.25]  
+    fig_height = fig_width * (sum(height_ratios) / 3)   # general scaling
 
+    print(fig_width, fig_height)
+    set_colour_style(font_colour, overleaf_background)
+
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=our_dpi, constrained_layout=True)
+    ax.axis("off")
+
+    # Create GridSpec
+    gs = gridspec.GridSpec(
+        nrows=5,
+        ncols=1,
+        figure=fig,
+        height_ratios=height_ratios,
+        wspace=0.05
+    )
+
+    ###############################################
+    # Now loop down the rows
+    ###############################################
+    gs_rows = []
+    for i in range(4):
+        row_facets = facets[(i*3):((i+1)*3)]
+        
+        gs_rows.append(
+            gridspec.GridSpecFromSubplotSpec(
+                1, 3,
+                subplot_spec=gs[i],
+                wspace=0.05,
+                hspace=0.05
+            )
+        )
+        
+        #----------------------------------------
+        # --- left plot ---
+        ax_left = fig.add_subplot(gs_rows[i][0]) 
+        remove_col = row_facets[0]
+        xlabel = f'{dic_COICOP_short[remove_col]} spend decile' 
+        pdf = add_percentile_decile_and_quintile(pdf_in, remove_col, 'abs')
+        
+        COICOP_cols = [c for c in pdf.columns if (('COICOP' in c) and (c != remove_col))]
+        cols = ['user_id', 'month'] + COICOP_cols + [remove_col, decile_col]
+        data_long = pdf[cols].melt(
+            id_vars=[decile_col, 'user_id', 'month'],
+            var_name='COICOP',
+            value_name='Total spend'
+        ).rename(columns={decile_col: 'decile'})
+
+        (dic_colours, pivot_df_gambling, width_stats_g, dic_COICOP_short, small_categories_g) = plot_area_bar_plot(
+            data_long, COICOP_labels_df,
+            COICOP_cols + [remove_col],
+            remove_col,
+            xlabel=xlabel,
+            ylabel=True,     # common y on the left panel
+            dic_colours=dic_COICOP_colours,
+            dic_COICOP_short=dic_COICOP_short,
+            ax=ax_left,  reorder_col=put_cat_on_top(combined_columns, remove_col)
+        )
+
+        #----------------------------------------
+        # --- Middle plot ---       
+        if row_facets[1] is None:
+            ax = fig.add_subplot(gs_rows[i][1])
+            ax.axis("off")
+            continue
+        
+        ax_mid = fig.add_subplot(gs_rows[i][1]) 
+        remove_col = row_facets[1]
+        xlabel = f'{dic_COICOP_short[remove_col]} spend decile'
+        pdf = add_percentile_decile_and_quintile(pdf_in, remove_col, 'abs')
+        
+        COICOP_cols = [c for c in pdf.columns if (('COICOP' in c) and (c != remove_col))]
+        cols = ['user_id', 'month'] + COICOP_cols + [remove_col, decile_col]
+        data_long = pdf[cols].melt(
+            id_vars=[decile_col, 'user_id', 'month'],
+            var_name='COICOP',
+            value_name='Total spend'
+        ).rename(columns={decile_col: 'decile'})
+
+        (dic_colours, us_pivot_df_gambling, us_width_stats_g, dic_COICOP_short, us_small_categories_g) = plot_area_bar_plot(
+            data_long, COICOP_labels_df,
+            COICOP_cols + [remove_col],
+            remove_col,
+            xlabel=xlabel,
+            ylabel=False,     # common y on the left panel
+            dic_colours=dic_COICOP_colours,
+            dic_COICOP_short=dic_COICOP_short,
+            ax=ax_mid,  reorder_col=put_cat_on_top(combined_columns, remove_col)
+        )
+        ax_mid.set_yticklabels([])
+
+        #----------------------------------------
+        # --- Right panel ---      
+        if row_facets[2] is None:
+            ax = fig.add_subplot(gs_rows[i][1])
+            ax.axis("off")
+            continue
+        
+        ax_right = fig.add_subplot(gs_rows[i][2]) 
+        
+        remove_col = row_facets[2]
+        xlabel = f'{dic_COICOP_short[remove_col]} spend decile'
+        pdf = add_percentile_decile_and_quintile(pdf_in, remove_col, 'abs')
+        
+        COICOP_cols_c = [c for c in pdf.columns if ('COICOP' in c)]
+        cols_c = ['user_id', 'month'] + COICOP_cols_c + [decile_col]
+        data_long = pdf[cols_c].melt(
+            id_vars=[decile_col, 'user_id', 'month'],
+            var_name='COICOP',
+            value_name='Total spend'
+        ).rename(columns={decile_col: 'decile'})
+
+        (dic_colours, pivot_df_coffee, width_stats_c, dic_COICOP_short, small_categories_c) = plot_area_bar_plot(
+            data_long, COICOP_labels_df,
+            COICOP_cols_c,
+            remove_col,
+            xlabel=xlabel,
+            ylabel=False,
+            dic_colours=dic_COICOP_colours,
+            dic_COICOP_short=dic_COICOP_short,
+            ax=ax_right, reorder_col=put_cat_on_top(combined_columns, remove_col)
+        )
+        ax_right.set_yticklabels([])
+        ax_right.set_xlabel(xlabel)
+
+        # Confirm y-limits
+        for a in (ax_left, ax_mid, ax_right):
+            a.set_ylim(0, 1.0)
+
+        # Now do panel labels.
+        ax_left.text(-0.24, 1.0, '',#row_facets[0],
+                        transform=ax_left.transAxes,
+                        ha='left', va='top', fontweight='bold')
+
+        ax_mid.text(-0.1, 1.0, '',#row_facets[1],
+                        transform=ax_mid.transAxes,
+                        ha='left', va='top', fontweight='bold')
+
+        ax_right.text(-0.1, 1.0, '',#row_facets[2],
+                        transform=ax_right.transAxes,
+                        ha='left', va='top', fontweight='bold')
+
+
+    ###############################################
+    # # --- Bottom section: Common legend in specified order ---    
+    ###############################################
+    ax_legend = fig.add_subplot(gs[4])     
+    ax_legend.axis('off')
+    legend_items = []
+    dic['Combined_COICOP'] = f'Categories with\n<1% spend'
+    for code in combined_columns:
+        # skip if colour not present (e.g., category absent in some panels)
+        if code in dic_colours and code in dic:
+            c = dic_colours[code]
+            label = dic_COICOP_short[code]
+            legend_items.append(mpatches.Patch(facecolor=c, edgecolor='none', label=label))
+
+    leg = ax_legend.legend(
+        handles=legend_items,
+        loc='center',#loc='upper left',
+        frameon=False,
+        handlelength=1.2,
+        handletextpad=0.6,
+        borderaxespad=0.0,
+        ncol=7
+    )
+
+    # --- save to pdf ---
+    fig.savefig(saveto, format='pdf', transparent=True, bbox_inches='tight', pad_inches=0.00)
+    print("Saved:", saveto)        
 
 def output_base_regression_and_robustness_checks():
     from locations import output_folder    
@@ -1292,6 +1495,11 @@ def main():
     
     # Supplementary Figures 2 and 3
     get_spend_range_plots()
+    
+    # For SI. Get displacement stacked bars for all categories
+    facets = [c for c in list(pdf_coffee.columns) if 'OIC' in c]
+    get_displacement_facet(pdf_coffee, f'{output_folder}/displacement_plot_1.pdf', facets[:12])
+    get_displacement_facet(pdf_coffee, f'{output_folder}/displacement_plot_2.pdf', facets[12:])
 
 
 if __name__ == "__main__":

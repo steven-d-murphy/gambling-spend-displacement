@@ -224,7 +224,9 @@ def main():
     pdf = pd.read_parquet(pdf_pth_uk)
     adf_gross = pd.read_parquet(asset_pq_gross_uk)
 
-    gamb_industry_size=11545610000
+    # Last four quarters non-lotteries gambling:
+    # https://www.gamblingcommission.gov.uk/statistics-and-research/publication/industry-statistics-quarterly-report-financial-year-april-2025-to-march-2026-q2
+    gamb_industry_size=13009597324
 
     ldf = pd.read_excel(f'{output_folder}/UK_regression_results_combined.xlsx', index_col='Unnamed: 0')
     ldf_net = ldf[ldf['version']=='net control by total_spend']

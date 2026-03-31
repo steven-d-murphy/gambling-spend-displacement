@@ -8,3 +8,6 @@ outputs/*
 
 # Local version of locations.py
 src/locations_local.py
+
+# For testing and development
+src/dev.ipynb
