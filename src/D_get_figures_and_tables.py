@@ -1428,7 +1428,7 @@ def get_overall_figures():
 def main():
     from locations import pdf_pth_uk_coffee, pdf_pth_uk, output_folder,pdf_pth_us, db_pth_uk
     pdf = pd.read_parquet(pdf_pth_uk)
-    pdf_us = pd.read_parquet(pdf_pth_uk)
+    pdf_us = pd.read_parquet(pdf_pth_us)
     pdf_coffee = pd.read_parquet(pdf_pth_uk_coffee)
 
     get_overall_figures()
