@@ -1231,7 +1231,7 @@ def get_displacement_facet(pdf_in, saveto, facets):
 
         #----------------------------------------
         # --- Middle plot ---       
-        if row_facets[1] is None:
+        if row_facets[1] is None:# We might need to turn this axis off
             ax = fig.add_subplot(gs_rows[i][1])
             ax.axis("off")
             continue
@@ -1263,20 +1263,19 @@ def get_displacement_facet(pdf_in, saveto, facets):
 
         #----------------------------------------
         # --- Right panel ---      
-        if row_facets[2] is None:
+        if row_facets[2] is None:# We might need to turn this axis off
             ax = fig.add_subplot(gs_rows[i][1])
             ax.axis("off")
             continue
         
         ax_right = fig.add_subplot(gs_rows[i][2]) 
-        
         remove_col = row_facets[2]
         xlabel = f'{dic_COICOP_short[remove_col]} spend decile'
         pdf = add_percentile_decile_and_quintile(pdf_in, remove_col, 'abs')
         
-        COICOP_cols_c = [c for c in pdf.columns if ('COICOP' in c)]
-        cols_c = ['user_id', 'month'] + COICOP_cols_c + [decile_col]
-        data_long = pdf[cols_c].melt(
+        COICOP_cols = [c for c in pdf.columns if (('COICOP' in c) and (c != remove_col))]
+        cols = ['user_id', 'month'] + COICOP_cols + [remove_col, decile_col]
+        data_long = pdf[cols].melt(
             id_vars=[decile_col, 'user_id', 'month'],
             var_name='COICOP',
             value_name='Total spend'
@@ -1284,7 +1283,7 @@ def get_displacement_facet(pdf_in, saveto, facets):
 
         (dic_colours, pivot_df_coffee, width_stats_c, dic_COICOP_short, small_categories_c) = plot_area_bar_plot(
             data_long, COICOP_labels_df,
-            COICOP_cols_c,
+            COICOP_cols + [remove_col],
             remove_col,
             xlabel=xlabel,
             ylabel=False,
@@ -1339,7 +1338,7 @@ def get_displacement_facet(pdf_in, saveto, facets):
 
     # --- save to pdf ---
     fig.savefig(saveto, format='pdf', transparent=True, bbox_inches='tight', pad_inches=0.00)
-    print("Saved:", saveto)        
+    print("Saved:", saveto)          
 
 def output_base_regression_and_robustness_checks():
     from locations import output_folder    
