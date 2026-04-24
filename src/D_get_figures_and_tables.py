@@ -593,7 +593,7 @@ def get_figure_2(pdf, pdf_us):
     )
 
     # --- save to pdf ---
-    saveto = f'{output_folder}/figure_2-UK_US.pdf'
+    saveto = f'{output_folder}/figure_2.pdf'
     fig.savefig(saveto, format='pdf', transparent=True, bbox_inches='tight', pad_inches=0.00)
     print("Saved:", saveto)
     
