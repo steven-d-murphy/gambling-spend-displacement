@@ -13,6 +13,13 @@ font_colour = 'black'
 green_hex = '#80C080'
 grey_hex = '#C0C0C0'
 
+figure_2_ordering = [ # To be used in figure 2 and displacement facets
+    'COICOP_14.0','COICOP_15.0', 'COICOP_10.0','COICOP_6.0','COICOP_3.0',
+    'COICOP_12.1','COICOP_5.0','COICOP_9.0','COICOP_13.2','COICOP_12.25',
+    'COICOP_8.0','COICOP_12.23','COICOP_11.0','COICOP_4.0','COICOP_7.0',
+    'COICOP_13.1', 'Combined_COICOP','COICOP_12.22','COICOP_1.0'
+    ]
+
 def define_style(column='single'):
     
     # Set figure width. 90mm for single column. 180 for double
@@ -483,7 +490,6 @@ def get_figure_2(pdf, pdf_us):
     height_ratios = [1, 0.25]  
     fig_height = fig_width * (sum(height_ratios) / 3)   # general scaling
     
-    print(fig_width, fig_height)
     set_colour_style(font_colour, overleaf_background)
     fig, axes = plt.subplots(figsize=(fig_width, fig_height), dpi=our_dpi, constrained_layout=True)
     axes.axis('off')
@@ -505,13 +511,7 @@ def get_figure_2(pdf, pdf_us):
     ax_legend = fig.add_subplot(gs[1])     
     ax_legend.axis('off')
 
-    combined_columns = [# This will determine the ordering, including the ordering of the legend
-    'COICOP_14.0','COICOP_15.0', 'COICOP_10.0','COICOP_6.0','COICOP_3.0',
-    'COICOP_12.1','COICOP_5.0','COICOP_9.0','COICOP_13.2','COICOP_12.25',
-    'COICOP_8.0','COICOP_12.23','COICOP_11.0','COICOP_4.0','COICOP_7.0',
-    'COICOP_13.1', 'Combined_COICOP','COICOP_12.22','COICOP_1.0'
-    ]
-
+    combined_columns = figure_2_ordering
 
     # --- Top left: (a) Gambling ---
     remove_col = 'COICOP_14.0'
@@ -1136,7 +1136,8 @@ def plot_spend_distribution_facet(spend_ranges: pd.DataFrame,
         plt.show()
     else:
         plt.close()
-        
+
+
 def get_displacement_facet(pdf_in, saveto, facets):
     '''Build a facet plot of displacement stacked bar plots'''
     import matplotlib.pyplot as plt
@@ -1152,15 +1153,34 @@ def get_displacement_facet(pdf_in, saveto, facets):
     decile_col = 'decile_abs' 
     
     # These are our columns. Need a quick function to put the selected column on top
-    combined_columns = [
-        'COICOP_14.0','COICOP_16.0','Combined_COICOP','COICOP_15.0', 'COICOP_10.0','COICOP_6.0','COICOP_3.0',
-        'COICOP_12.1','COICOP_5.0','COICOP_9.0','COICOP_13.2','COICOP_12.25',
-        'COICOP_8.0','COICOP_12.23','COICOP_11.0','COICOP_4.0','COICOP_7.0',
-        'COICOP_13.1','COICOP_12.22','COICOP_1.0'
-        ]
+    combined_columns = [# Same as in get_figure_2
+    'COICOP_14.0','COICOP_15.0', 'COICOP_10.0','COICOP_6.0','COICOP_3.0',
+    'COICOP_12.1','COICOP_5.0','COICOP_9.0','COICOP_13.2','COICOP_12.25',
+    'COICOP_8.0','COICOP_12.23','COICOP_11.0','COICOP_4.0','COICOP_7.0',
+    'COICOP_13.1', 'Combined_COICOP','COICOP_12.22','COICOP_1.0'
+    ]
     def put_cat_on_top(lst,cat):
         '''Moves the selected column up to be first in the list'''
         return [cat]+[v for v in lst if not (v==cat)]
+    
+    def get_data_and_labels(pdf_in, remove_col, dic_COICOP_short, decile_col):
+        '''Get the information for plotting to each facet'''
+        xlabel = f'{dic_COICOP_short[remove_col]} spend decile' 
+        
+        if remove_col=='COICOP_14.0': # will always pass in gambling version
+            pdf = pdf_in.copy()
+        else:
+            pdf = add_percentile_decile_and_quintile(pdf_in, remove_col, 'abs')
+        
+        COICOP_cols = [c for c in pdf.columns if (('COICOP' in c) and (c != remove_col))]
+        cols = ['user_id', 'month'] + COICOP_cols + [remove_col, decile_col]
+        data_long = pdf[cols].melt(
+            id_vars=[decile_col, 'user_id', 'month'],
+            var_name='COICOP',
+            value_name='Total spend'
+        ).rename(columns={decile_col: 'decile'})
+        return data_long, xlabel, COICOP_cols 
+    
     
     # Make sure we pad facets correctly to avoid bugs
     while len(facets) % 3 != 0:
@@ -1170,10 +1190,9 @@ def get_displacement_facet(pdf_in, saveto, facets):
     fig_width, our_dpi, our_linewidth = define_style(column='double')
         
     # Four rows of panels + one legend row
-    height_ratios = [1, 1, 1, 1, 0.25]  
+    height_ratios = [1, 1, 1, 0.25]  
     fig_height = fig_width * (sum(height_ratios) / 3)   # general scaling
 
-    print(fig_width, fig_height)
     set_colour_style(font_colour, overleaf_background)
 
     fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=our_dpi, constrained_layout=True)
@@ -1181,7 +1200,7 @@ def get_displacement_facet(pdf_in, saveto, facets):
 
     # Create GridSpec
     gs = gridspec.GridSpec(
-        nrows=5,
+        nrows=4,
         ncols=1,
         figure=fig,
         height_ratios=height_ratios,
@@ -1192,7 +1211,7 @@ def get_displacement_facet(pdf_in, saveto, facets):
     # Now loop down the rows
     ###############################################
     gs_rows = []
-    for i in range(4):
+    for i in range(3):
         row_facets = facets[(i*3):((i+1)*3)]
         
         gs_rows.append(
@@ -1208,16 +1227,7 @@ def get_displacement_facet(pdf_in, saveto, facets):
         # --- left plot ---
         ax_left = fig.add_subplot(gs_rows[i][0]) 
         remove_col = row_facets[0]
-        xlabel = f'{dic_COICOP_short[remove_col]} spend decile' 
-        pdf = add_percentile_decile_and_quintile(pdf_in, remove_col, 'abs')
-        
-        COICOP_cols = [c for c in pdf.columns if (('COICOP' in c) and (c != remove_col))]
-        cols = ['user_id', 'month'] + COICOP_cols + [remove_col, decile_col]
-        data_long = pdf[cols].melt(
-            id_vars=[decile_col, 'user_id', 'month'],
-            var_name='COICOP',
-            value_name='Total spend'
-        ).rename(columns={decile_col: 'decile'})
+        data_long, xlabel, COICOP_cols = get_data_and_labels(pdf_in, remove_col, dic_COICOP_short, decile_col)
 
         (dic_colours, pivot_df_gambling, width_stats_g, dic_COICOP_short, small_categories_g) = plot_area_bar_plot(
             data_long, COICOP_labels_df,
@@ -1239,16 +1249,7 @@ def get_displacement_facet(pdf_in, saveto, facets):
         
         ax_mid = fig.add_subplot(gs_rows[i][1]) 
         remove_col = row_facets[1]
-        xlabel = f'{dic_COICOP_short[remove_col]} spend decile'
-        pdf = add_percentile_decile_and_quintile(pdf_in, remove_col, 'abs')
-        
-        COICOP_cols = [c for c in pdf.columns if (('COICOP' in c) and (c != remove_col))]
-        cols = ['user_id', 'month'] + COICOP_cols + [remove_col, decile_col]
-        data_long = pdf[cols].melt(
-            id_vars=[decile_col, 'user_id', 'month'],
-            var_name='COICOP',
-            value_name='Total spend'
-        ).rename(columns={decile_col: 'decile'})
+        data_long, xlabel, COICOP_cols = get_data_and_labels(pdf_in, remove_col, dic_COICOP_short, decile_col)
 
         (dic_colours, us_pivot_df_gambling, us_width_stats_g, dic_COICOP_short, us_small_categories_g) = plot_area_bar_plot(
             data_long, COICOP_labels_df,
@@ -1271,16 +1272,7 @@ def get_displacement_facet(pdf_in, saveto, facets):
         
         ax_right = fig.add_subplot(gs_rows[i][2]) 
         remove_col = row_facets[2]
-        xlabel = f'{dic_COICOP_short[remove_col]} spend decile'
-        pdf = add_percentile_decile_and_quintile(pdf_in, remove_col, 'abs')
-        
-        COICOP_cols = [c for c in pdf.columns if (('COICOP' in c) and (c != remove_col))]
-        cols = ['user_id', 'month'] + COICOP_cols + [remove_col, decile_col]
-        data_long = pdf[cols].melt(
-            id_vars=[decile_col, 'user_id', 'month'],
-            var_name='COICOP',
-            value_name='Total spend'
-        ).rename(columns={decile_col: 'decile'})
+        data_long, xlabel, COICOP_cols = get_data_and_labels(pdf_in, remove_col, dic_COICOP_short, decile_col)
 
         (dic_colours, pivot_df_coffee, width_stats_c, dic_COICOP_short, small_categories_c) = plot_area_bar_plot(
             data_long, COICOP_labels_df,
@@ -1316,7 +1308,7 @@ def get_displacement_facet(pdf_in, saveto, facets):
     ###############################################
     # # --- Bottom section: Common legend in specified order ---    
     ###############################################
-    ax_legend = fig.add_subplot(gs[4])     
+    ax_legend = fig.add_subplot(gs[3])     
     ax_legend.axis('off')
     legend_items = []
     dic['Combined_COICOP'] = f'Categories with\n<1% spend'
@@ -1340,6 +1332,18 @@ def get_displacement_facet(pdf_in, saveto, facets):
     # --- save to pdf ---
     fig.savefig(saveto, format='pdf', transparent=True, bbox_inches='tight', pad_inches=0.00)
     print("Saved:", saveto)          
+    
+def get_displacement_facets(pdf):
+    '''Investigate the distribution of spending as spending in different categories increases'''
+    from locations import output_folder
+    facets = [ # Same order as for figure 2, except bringing savings and investments next to gambling
+        'COICOP_14.0','COICOP_12.22','COICOP_12.23','COICOP_15.0', 'COICOP_10.0','COICOP_6.0','COICOP_3.0',
+        'COICOP_12.1','COICOP_5.0','COICOP_9.0','COICOP_13.2','COICOP_12.25',
+        'COICOP_8.0','COICOP_11.0','COICOP_4.0','COICOP_7.0',
+        'COICOP_13.1','COICOP_1.0'
+        ]
+    get_displacement_facet(pdf, f'{output_folder}/displacement_plot_1.pdf', facets[:9])
+    get_displacement_facet(pdf, f'{output_folder}/displacement_plot_2.pdf', facets[9:])
 
 def output_base_regression_and_robustness_checks():
     from locations import output_folder    
@@ -1456,14 +1460,12 @@ def main():
     
     # Regression results to latex
     output_base_regression_and_robustness_checks()
-    
+
     # Supplementary Figures 2 and 3
     get_spend_range_plots()
     
     # For SI. Get displacement stacked bars for all categories
-    facets = [c for c in list(pdf_coffee.columns) if 'OIC' in c]
-    get_displacement_facet(pdf_coffee, f'{output_folder}/displacement_plot_1.pdf', facets[:12])
-    get_displacement_facet(pdf_coffee, f'{output_folder}/displacement_plot_2.pdf', facets[12:])
+    get_displacement_facets(pdf)
 
 
 if __name__ == "__main__":
