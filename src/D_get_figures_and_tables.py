@@ -506,7 +506,7 @@ def get_figure_2(pdf, pdf_us):
     ax_legend.axis('off')
 
     combined_columns = [
-    'COICOP_14.0','COICOP_16.0','Combined_COICOP','COICOP_15.0', 'COICOP_10.0','COICOP_6.0','COICOP_3.0',
+    'COICOP_14.0', 'Combined_COICOP','COICOP_15.0', 'COICOP_10.0','COICOP_6.0','COICOP_3.0',
     'COICOP_12.1','COICOP_5.0','COICOP_9.0','COICOP_13.2','COICOP_12.25',
     'COICOP_8.0','COICOP_12.23','COICOP_11.0','COICOP_4.0','COICOP_7.0',
     'COICOP_13.1','COICOP_12.22','COICOP_1.0'
