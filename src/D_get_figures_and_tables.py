@@ -227,7 +227,7 @@ def get_table_1(db_pth, pdf_in, adf, is_all_data=True, is_asset_data=True):
     return out_df
 
 
-def get_overall_demographics_to_latex():
+def get_overall_demographics_to_latex(out_tables):
     
     # US to start with
     from locations import db_pth_us, pop_pdf_pth_us, pop_asset_pq_us, asset_pq_us, pdf_pth_us, output_folder
@@ -279,7 +279,10 @@ def get_overall_demographics_to_latex():
             f.write(ltx_str)
             print('Output to : ', ltx_out) 
 
-    return us_table_1, uk_table_1
+    out_tables['UK_overall_demographics'] = uk_table_1
+    out_tables['US_overall_demographics'] = us_table_1
+
+    return out_tables
 
 def get_decile_width_stats(df_in, max_width):
     '''
@@ -472,7 +475,7 @@ def plot_area_bar_plot(absmdf,
 
     return dic_colours, pivot_df, width_stats, dic_COICOP_short, small_categories
 
-def get_figure_2(pdf, pdf_us):
+def get_figure_2(pdf, pdf_us, out_tables):
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
     import matplotlib.patches as mpatches
@@ -493,8 +496,7 @@ def get_figure_2(pdf, pdf_us):
     set_colour_style(font_colour, overleaf_background)
     fig, axes = plt.subplots(figsize=(fig_width, fig_height), dpi=our_dpi, constrained_layout=True)
     axes.axis('off')
-    
-    
+        
     gs = gridspec.GridSpec(
         nrows=2, ncols=1, figure=fig,
         wspace=0.05,
@@ -534,7 +536,9 @@ def get_figure_2(pdf, pdf_us):
         dic_COICOP_short=dic_COICOP_short,
         ax=ax_uk, reorder_col=combined_columns
     )
-
+    
+    out_tables['figure_2_UK_rectangle_sizes'] = pivot_df_gambling
+    out_tables['figure_2_UK_bar_widths'] = width_stats_g
 
     # --- Top right: (b) US data ---
     remove_col = 'COICOP_14.0'
@@ -557,7 +561,9 @@ def get_figure_2(pdf, pdf_us):
         ax=ax_us, reorder_col=combined_columns
     )
     ax_us.set_yticklabels([])
-
+    
+    out_tables['figure_2_US_rectangle_sizes'] = us_pivot_df_gambling
+    out_tables['figure_2_US_bar_widths'] = us_width_stats_g
     
     # Confirm y-limits
     for a in (ax_uk, ax_us):
@@ -597,6 +603,8 @@ def get_figure_2(pdf, pdf_us):
     saveto = f'{output_folder}/figure_2.pdf'
     fig.savefig(saveto, format='pdf', transparent=True, bbox_inches='tight', pad_inches=0.00)
     print("Saved:", saveto)
+    
+    return out_tables
     
     
     
@@ -754,7 +762,7 @@ def double_barplot_of_regression_coefficients(
     fig.savefig(save_path, format='pdf', transparent=True, bbox_inches='tight', pad_inches=0.02)
 
 
-def get_figure_3():
+def get_figure_3(out_tables):
     from locations import output_folder
     from A_get_data import get_COICOP_maps
     from B_regression_analysis import combinations, get_labels_and_colour_dics
@@ -785,8 +793,13 @@ def get_figure_3():
         dicShort,
         save_path,
         ylim=ylim)
+    
+    out_tables['Figure_3_UK_data'] = gb_ldf
+    out_tables['Figure_3_US_data'] = us_ldf    
+    
+    return out_tables
 
-def plot_classification_proportion(db_pth, out_pth, class_prop=20000):
+def plot_classification_proportion(db_pth, out_pth, class_prop=20000, out_tables={}):
     '''Plot the proportion of total debits that are classified by ChatGPT
     class_prop is the top # of brands that were classified, ordered by
     total debit spend
@@ -877,6 +890,8 @@ def plot_classification_proportion(db_pth, out_pth, class_prop=20000):
     ax.get_figure().savefig(out_pth, format='pdf', transparent=True, bbox_inches='tight', pad_inches=0.02)
     print(stats.transpose())
     
+    out_tables['Classification_plot_data'] = plt_df.drop(columns=['brand']).set_index('rank', drop=True)
+    return out_tables
 
 def get_decile_demographic_data(pdf_in, db_pth, dicShort, latex_out, is_coffee, deb_cred_df=pd.DataFrame()):
         
@@ -959,7 +974,7 @@ def get_decile_demographic_data(pdf_in, db_pth, dicShort, latex_out, is_coffee, 
     return out_df
 
     
-def get_decile_demographics():
+def get_decile_demographics(out_tables):
     from locations import db_pth_uk, db_pth_us
     from locations import pdf_pth_uk, pdf_pth_us, pdf_pth_uk_coffee
     from locations import asset_deb_and_cred_pq_uk, asset_deb_and_cred_pq_us
@@ -974,14 +989,19 @@ def get_decile_demographics():
     pdf = pd.read_parquet(pdf_pth_us)
     deb_cred_df = pd.read_parquet(asset_deb_and_cred_pq_us)
     df = get_decile_demographic_data(pdf, db_pth_us, dic_COICOP_short, f'{output_folder}/us_decile_demographics.tex', False, deb_cred_df=deb_cred_df)
+    out_tables['US_decile_demographics'] = df.copy()
 
     pdf = pd.read_parquet(pdf_pth_uk)
     deb_cred_df = pd.read_parquet(asset_deb_and_cred_pq_uk)
     df = get_decile_demographic_data(pdf, db_pth_uk, dic_COICOP_short, f'{output_folder}/uk_decile_demographics.tex', False, deb_cred_df=deb_cred_df)
+    out_tables['UK_decile_demographics'] = df.copy()
 
     pdf = pd.read_parquet(pdf_pth_uk_coffee)
     df = get_decile_demographic_data(pdf, db_pth_uk, dic_COICOP_short, f'{output_folder}/coffee_decile_demographics.tex', True)
-
+    out_tables['Coffee_decile_demographics'] = df.copy()
+    
+    return out_tables
+    
 def get_spend_ranges(db_pth: str, market: str = 'UK') -> pd.DataFrame:
     """
     Get spend by amount range and COICOP category from DuckDB transaction database.
@@ -1138,7 +1158,7 @@ def plot_spend_distribution_facet(spend_ranges: pd.DataFrame,
         plt.close()
 
 
-def get_displacement_facet(pdf_in, saveto, facets):
+def get_displacement_facet(pdf_in, saveto, facets, out_tables):
     '''Build a facet plot of displacement stacked bar plots'''
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
@@ -1239,7 +1259,9 @@ def get_displacement_facet(pdf_in, saveto, facets):
             dic_COICOP_short=dic_COICOP_short,
             ax=ax_left,  reorder_col=put_cat_on_top(combined_columns, remove_col)
         )
-
+        out_tables[f'ACSD_{dic_COICOP_short[remove_col]}_RS'] = pivot_df_gambling
+        out_tables[f'ACSD_{dic_COICOP_short[remove_col]}_BW'] = width_stats_g
+                
         #----------------------------------------
         # --- Middle plot ---       
         if row_facets[1] is None:# We might need to turn this axis off
@@ -1262,6 +1284,8 @@ def get_displacement_facet(pdf_in, saveto, facets):
             ax=ax_mid,  reorder_col=put_cat_on_top(combined_columns, remove_col)
         )
         ax_mid.set_yticklabels([])
+        out_tables[f'ACSD_{dic_COICOP_short[remove_col]}_RS'] = us_pivot_df_gambling
+        out_tables[f'ACSD_{dic_COICOP_short[remove_col]}_BW'] = us_width_stats_g
 
         #----------------------------------------
         # --- Right panel ---      
@@ -1286,6 +1310,8 @@ def get_displacement_facet(pdf_in, saveto, facets):
         )
         ax_right.set_yticklabels([])
         ax_right.set_xlabel(xlabel)
+        out_tables[f'ACSD_{dic_COICOP_short[remove_col]}_RS'] = pivot_df_coffee
+        out_tables[f'ACSD_{dic_COICOP_short[remove_col]}_BW'] = width_stats_c
 
         # Confirm y-limits
         for a in (ax_left, ax_mid, ax_right):
@@ -1331,9 +1357,11 @@ def get_displacement_facet(pdf_in, saveto, facets):
 
     # --- save to pdf ---
     fig.savefig(saveto, format='pdf', transparent=True, bbox_inches='tight', pad_inches=0.00)
-    print("Saved:", saveto)          
+    print("Saved:", saveto) 
     
-def get_displacement_facets(pdf):
+    return out_tables         
+    
+def get_displacement_facets(pdf, out_tables):
     '''Investigate the distribution of spending as spending in different categories increases'''
     from locations import output_folder
     facets = [ # Same order as for figure 2, except bringing savings and investments next to gambling
@@ -1342,8 +1370,10 @@ def get_displacement_facets(pdf):
         'COICOP_8.0','COICOP_11.0','COICOP_4.0','COICOP_7.0',
         'COICOP_13.1','COICOP_1.0'
         ]
-    get_displacement_facet(pdf, f'{output_folder}/displacement_plot_1.pdf', facets[:9])
-    get_displacement_facet(pdf, f'{output_folder}/displacement_plot_2.pdf', facets[9:])
+    out_tables = get_displacement_facet(pdf, f'{output_folder}/displacement_plot_1.pdf', facets[:9], out_tables)
+    out_tables = get_displacement_facet(pdf, f'{output_folder}/displacement_plot_2.pdf', facets[9:], out_tables)
+    
+    return out_tables
 
 def output_base_regression_and_robustness_checks():
     from locations import output_folder    
@@ -1363,9 +1393,7 @@ def output_base_regression_and_robustness_checks():
             
             ltx_tbl['label'] = ltx_tbl['Dep. variable code'].map(dicShort)
             ltx_tbl[r'95\% CI'] = ltx_tbl.apply(lambda row: f"[{row['CI Lower']:.2g}, {row['CI Upper']:.2g}]", axis=1)
-            
-            reg_lbl = f'{net_or_gross} control by {lbl}'
-            
+                        
             msk = (ltx_tbl.Model == 'Fixed effects') 
             msk = msk & (ltx_tbl.Variable == 'COICOP_14.0')
             ltx_tbl = ltx_tbl[msk].copy() # effects_df[['Category', 'Coef.', 'Std.Err.', 'P>|t|', 'R-squared']].set_index('Category')
@@ -1394,10 +1422,14 @@ def output_base_regression_and_robustness_checks():
             with open(ltx_file, 'w') as f:
                 f.write(ltx_str)
             print('Read      : ', results_pth)
-            print('Output to : ', ltx_file)          
+            print('Output to : ', ltx_file)    
+            
+            # out_tables[f'Reg_tbl_{net_or_gross}_ctrl_{lbl}'] = ltx_tbl # Not required - have data in latex
+    # return out_tables
+               
 
 
-def get_spend_range_plots():
+def get_spend_range_plots(out_tables):
     from locations import db_pth_uk, db_pth_us, output_folder
     from A_get_data import get_COICOP_maps
     from B_regression_analysis import combinations, get_labels_and_colour_dics
@@ -1411,6 +1443,8 @@ def get_spend_range_plots():
         plot_spend_distribution_facet(spend_ranges, dicShort=dicShort, 
                                 output_path=f'{output_folder}/category_distribution_facet_{market}.png',
                                 cols=5)
+        out_tables[f'Spend_ranges_{market}'] = spend_ranges
+    return out_tables
    
 def get_overall_figures():
     from locations import db_pth_uk, db_pth_us
@@ -1428,12 +1462,31 @@ def get_overall_figures():
         print(f'\nTotal unique users \t= {tot_users}    \nTotal unique gamblers \t= {tot_gamblers}')
         print(f'\nTransaction count  \t= {trans_count}  \nGambling transactions \t= {gamb_trans_count}')
 
+def initialise_output_tables():
+    abbr_df = pd.DataFrame({'Abbreviation in tab name':['ACSD', 'BW', 'DS'],
+                                              'Meaning':['All category spending displacement', #
+                                                         'Bar width', 
+                                                         'Decile spends'],
+                                              'Description':['From section C in the Supplementary Information', 
+                                                             'Proportional to the total spending', 
+                                                             'Proportion of spending in that category']})
+    out_tables={'Abbreviations':abbr_df.set_index('Abbreviation in tab name', drop=True)}
+    return out_tables
 
+def save_output_tables_to_excel(out_tables):
+    from locations import output_folder
+    out_pth = f'{output_folder}/Dataset_S1.xlsx'
+    with pd.ExcelWriter(out_pth) as writer:
+        for s,d in out_tables.items():
+            d.to_excel(writer, sheet_name=s[:31], index=True)
+        
 def main():
     from locations import pdf_pth_uk_coffee, pdf_pth_uk, output_folder,pdf_pth_us, db_pth_uk
     pdf = pd.read_parquet(pdf_pth_uk)
     pdf_us = pd.read_parquet(pdf_pth_us)
     pdf_coffee = pd.read_parquet(pdf_pth_uk_coffee)
+
+    out_tables = initialise_output_tables() # key = tab name, value = dataframe
 
     get_overall_figures()
 
@@ -1441,32 +1494,35 @@ def main():
     ## Figures and tables in main article
 
     # Generate Table ST1 (US) and Table 1 UK
-    us_table_1, uk_table_1 = get_overall_demographics_to_latex()
+    out_tables = get_overall_demographics_to_latex(out_tables)
 
     # Generate Figure 2
-    get_figure_2(pdf, pdf_us)
+    out_tables = get_figure_2(pdf, pdf_us, out_tables)
 
     # Generate Figure 3
-    get_figure_3()
+    out_tables = get_figure_3(out_tables)
     
     ################################################################
     ## Figures and tables in Supplementary Information
     
     # Supplementary Figure 1
-    plot_classification_proportion(db_pth_uk, f'{output_folder}/cumulative_classification_plot.pdf')
+    out_tables = plot_classification_proportion(db_pth_uk, 
+                                                f'{output_folder}/cumulative_classification_plot.pdf', 
+                                                out_tables=out_tables)
     
     # Supplementary Tables 2, 3 and 4
-    get_decile_demographics()
+    out_tables = get_decile_demographics(out_tables)
     
     # Regression results to latex
     output_base_regression_and_robustness_checks()
 
     # Supplementary Figures 2 and 3
-    get_spend_range_plots()
+    out_tables = get_spend_range_plots(out_tables)
     
     # For SI. Get displacement stacked bars for all categories
-    get_displacement_facets(pdf)
+    out_tables = get_displacement_facets(pdf, out_tables)
 
+    save_output_tables_to_excel(out_tables)
 
 if __name__ == "__main__":
     main()
